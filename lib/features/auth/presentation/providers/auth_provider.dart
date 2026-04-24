@@ -18,18 +18,14 @@ class AuthProvider extends ChangeNotifier {
   // ─── State ───
   AuthStatus _status = AuthStatus.initial;
   User? _firebaseUser;
-  String? _backendToken;
   String? _errorMessage;
 
   // ─── Getters ───
   AuthStatus get status => _status;
   User? get firebaseUser => _firebaseUser;
-  String? get backendToken => _backendToken;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _status == AuthStatus.loading;
 
-  // ─── Constructor ───
-  // Penting: Agar saat aplikasi dibuka, dia langsung cek apakah user sudah login
   AuthProvider() {
     _checkCurrentUser();
   }
@@ -37,18 +33,48 @@ class AuthProvider extends ChangeNotifier {
   void _checkCurrentUser() {
     _firebaseUser = _auth.currentUser;
     if (_firebaseUser != null) {
-      _status = AuthStatus.authenticated;
+      _status = _firebaseUser!.emailVerified ? AuthStatus.authenticated : AuthStatus.emailNotVerified;
     } else {
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
   }
 
-  // ─── Register dengan Email & Password ───
-  Future<void> registerWithEmail(String email, String password) async {
+  // ─── LOGIN DENGAN EMAIL (Tambahkan ini agar Login Page tidak merah) ───
+  Future<bool> loginWithEmail({required String email, required String password}) async {
     _status = AuthStatus.loading;
     _errorMessage = null;
-    notifyListeners(); // Memberitahu UI untuk menampilkan loading spinner
+    notifyListeners();
+
+    try {
+      UserCredential credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      _firebaseUser = credential.user;
+
+      if (_firebaseUser != null && !_firebaseUser!.emailVerified) {
+        _status = AuthStatus.emailNotVerified;
+        notifyListeners();
+        return false;
+      }
+
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = _handleFirebaseAuthError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── REGISTER DENGAN EMAIL (Sesuai dengan pemanggilan di RegisterPage) ───
+  Future<bool> register({required String name, required String email, required String password}) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
 
     try {
       UserCredential credential = await _auth.createUserWithEmailAndPassword(
@@ -57,48 +83,84 @@ class AuthProvider extends ChangeNotifier {
       );
 
       _firebaseUser = credential.user;
+      await _firebaseUser?.updateDisplayName(name); // Simpan nama user
       
-      // Cek apakah email perlu verifikasi
-      if (_firebaseUser != null && !_firebaseUser!.emailVerified) {
-        await _firebaseUser!.sendEmailVerification();
-        _status = AuthStatus.emailNotVerified;
-      } else {
-        _status = AuthStatus.authenticated;
-      }
-
+      await _firebaseUser?.sendEmailVerification();
+      _status = AuthStatus.emailNotVerified;
+      notifyListeners();
+      return true;
     } on FirebaseAuthException catch (e) {
       _status = AuthStatus.error;
       _errorMessage = _handleFirebaseAuthError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── LOGIN GOOGLE (Tambahkan ini agar tombol Google tidak merah) ───
+  Future<bool> loginWithGoogle() async {
+    _status = AuthStatus.loading;
+    notifyListeners();
+    try {
+      final GoogleSignInAccount? googleUser = await _googlesignIn.signIn();
+      if (googleUser == null) {
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await _auth.signInWithCredential(credential);
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
     } catch (e) {
       _status = AuthStatus.error;
-      _errorMessage = "Terjadi kesalahan sistem.";
-    } finally {
-      notifyListeners(); // Update UI setelah proses selesai
+      _errorMessage = "Gagal login Google";
+      notifyListeners();
+      return false;
     }
   }
 
-  // Helper untuk pesan error yang lebih manusiawi
-  String _handleFirebaseAuthError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'email-already-in-use':
-        return "Email sudah terdaftar.";
-      case 'invalid-email':
-        return "Format email salah.";
-      case 'weak-password':
-        return "Password terlalu lemah.";
-      default:
-        return e.message ?? "Gagal melakukan registrasi.";
+  // ─── CEK VERIFIKASI (Untuk VerifyEmailPage) ───
+  Future<bool> checkEmailVerified() async {
+    await _auth.currentUser?.reload();
+    _firebaseUser = _auth.currentUser;
+    if (_firebaseUser?.emailVerified ?? false) {
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
     }
+    return false;
   }
 
-  // ─── Logout ───
+  // ─── RESEND EMAIL ───
+  Future<void> resendVerificationEmail() async {
+    await _auth.currentUser?.sendEmailVerification();
+  }
+
+  // ─── LOGOUT ───
   Future<void> signOut() async {
     await _auth.signOut();
     await _googlesignIn.signOut();
     _firebaseUser = null;
-    _backendToken = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
   }
-  
+
+  // Biar konsisten dengan pemanggilan di UI
+  Future<void> logout() => signOut();
+
+  String _handleFirebaseAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use': return "Email sudah terdaftar.";
+      case 'user-not-found': return "Akun tidak ditemukan.";
+      case 'wrong-password': return "Password salah.";
+      case 'invalid-email': return "Format email salah.";
+      default: return e.message ?? "Terjadi kesalahan.";
+    }
+  }
 }

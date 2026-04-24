@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 // Sesuaikan import path dengan struktur foldermu
 import 'package:pertemuan5/features/auth/presentation/providers/auth_provider.dart'; 
-import 'package:pertemuan5/core/routes/app_router.dart';
+import 'package:pertemuan5/core/routers/app_router.dart';
 import 'package:pertemuan5/features/auth/presentation/widgets/custom_button.dart';
 import 'package:pertemuan5/features/auth/presentation/widgets/auth_header.dart';
 

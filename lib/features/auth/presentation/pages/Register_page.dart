@@ -12,7 +12,7 @@ import 'package:pertemuan5/features/auth/presentation/widgets/loading_overlay.da
 import 'package:pertemuan5/features/auth/presentation/widgets/auth_header.dart';
 
 // Import router untuk navigasi
-import 'package:pertemuan5/core/routes/app_router.dart';
+import 'package:pertemuan5/core/routers/app_router.dart';
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
   @override
