@@ -100,4 +100,5 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.unauthenticated;
     notifyListeners();
   }
+  
 }
