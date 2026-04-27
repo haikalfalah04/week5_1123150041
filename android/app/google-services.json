@@ -1,32 +1,13 @@
 {
   "project_info": {
-    "project_number": "819030506862",
-    "project_id": "myprojectfirebase-2760a",
-    "storage_bucket": "myprojectfirebase-2760a.firebasestorage.app"
+    "project_number": "710344379329",
+    "project_id": "gin-firebase-backend-8dcfe",
+    "storage_bucket": "gin-firebase-backend-8dcfe.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:819030506862:android:9e2f865d9d8aafa359157f",
-        "android_client_info": {
-          "package_name": "com.example.flutter_haikal"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDMNZB3WAgAWZygkwuW44CUX7ZsJ0t-j2A"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:819030506862:android:7c2929ca12e384ac59157f",
+        "mobilesdk_app_id": "1:710344379329:android:a005579cc0b8ba8f6c7d40",
         "android_client_info": {
           "package_name": "com.example.pertemuan5"
         }
@@ -34,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDMNZB3WAgAWZygkwuW44CUX7ZsJ0t-j2A"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:819030506862:android:33ee66820623b63759157f",
-        "android_client_info": {
-          "package_name": "com.example.week10"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDMNZB3WAgAWZygkwuW44CUX7ZsJ0t-j2A"
+          "current_key": "AIzaSyBRy3S7Z4FyTXuxmGYTzuF-jHqKRWF_Ie4"
         }
       ],
       "services": {
