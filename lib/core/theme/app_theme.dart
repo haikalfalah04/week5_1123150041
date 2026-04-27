@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constans/api_colors.dart';
+import '../constans/app_color.dart';
 
 class AppTheme {
   static ThemeData get light {
