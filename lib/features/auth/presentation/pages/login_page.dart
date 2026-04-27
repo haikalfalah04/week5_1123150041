@@ -1,18 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:pertemuan5/features/auth/presentation/providers/auth_provider.dart';
 import 'package:email_validator/email_validator.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-// Import sesuai path projectmu
-import 'package:pertemuan5/features/auth/presentation/providers/auth_provider.dart';
-import 'package:pertemuan5/core/routers/app_router.dart';
-import 'package:pertemuan5/features/auth/presentation/widgets/custom_text_field.dart';
-import 'package:pertemuan5/features/auth/presentation/widgets/custom_button.dart';
-import 'package:pertemuan5/features/auth/presentation/widgets/auth_header.dart';
-import 'package:pertemuan5/features/auth/presentation/widgets/loading_overlay.dart';
-import 'package:pertemuan5/features/auth/presentation/widgets/google_sign_in_button.dart';
-import 'package:pertemuan5/features/auth/presentation/widgets/divider_with_text.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../../../core/routers/app_router.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/auth_header.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/divider_with_text.dart';
+import '../widgets/google_sign_in_button.dart';
+import '../widgets/loading_overlay.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,10 +36,9 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
-    // Pastikan nama fungsi sesuai: signInWithEmail
-    final ok = await auth.signInWithEmail(
-      _emailCtrl.text.trim(),
-      _passCtrl.text,
+    final ok = await auth.loginWithEmail(
+      email: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
     );
 
     if (!mounted) return;
@@ -50,8 +47,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loginGoogle() async {
     final auth = context.read<AuthProvider>();
-    // Pastikan nama fungsi sesuai: signInWithGoogle
-    final ok = await auth.signInWithGoogle();
+    final ok = await auth.loginWithGoogle();
     
     if (!mounted) return;
     _handleLoginResult(ok, auth);
