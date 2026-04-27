@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../data/repositories/auth_repository_impl.dart';
+import '../../../../core/services/secure_storage.dart';
+
 enum AuthStatus {
   initial,
   loading,
@@ -14,6 +17,7 @@ enum AuthStatus {
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googlesignIn = GoogleSignIn();
+  final AuthRepositoryImpl _authRepo = AuthRepositoryImpl();
 
   // ─── State ───
   AuthStatus _status = AuthStatus.initial;
@@ -40,7 +44,25 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── LOGIN DENGAN EMAIL (Tambahkan ini agar Login Page tidak merah) ───
+  // ─── Kirim Firebase Token ke Backend, terima JWT, simpan JWT ───
+  Future<void> _verifyWithBackend() async {
+    try {
+      // 1. Ambil Firebase ID Token
+      final firebaseToken = await _firebaseUser!.getIdToken();
+      if (firebaseToken == null) return;
+
+      // 2. Kirim ke backend → terima JWT
+      final jwt = await _authRepo.verifyFirebaseToken(firebaseToken);
+
+      // 3. Simpan JWT ke secure storage
+      await SecureStorageService.saveToken(jwt);
+    } catch (e) {
+      debugPrint('[AuthProvider] Backend verify error: $e');
+      // Tidak block login jika backend gagal, user tetap bisa lihat catalog
+    }
+  }
+
+  // ─── LOGIN DENGAN EMAIL ───
   Future<bool> loginWithEmail({required String email, required String password}) async {
     _status = AuthStatus.loading;
     _errorMessage = null;
@@ -59,6 +81,9 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
+      // Kirim Firebase token ke backend → simpan JWT
+      await _verifyWithBackend();
+
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
@@ -70,7 +95,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── REGISTER DENGAN EMAIL (Sesuai dengan pemanggilan di RegisterPage) ───
+  // ─── REGISTER DENGAN EMAIL ───
   Future<bool> register({required String name, required String email, required String password}) async {
     _status = AuthStatus.loading;
     _errorMessage = null;
@@ -97,7 +122,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── LOGIN GOOGLE (Tambahkan ini agar tombol Google tidak merah) ───
+  // ─── LOGIN GOOGLE ───
   Future<bool> loginWithGoogle() async {
     _status = AuthStatus.loading;
     notifyListeners();
@@ -113,7 +138,12 @@ class AuthProvider extends ChangeNotifier {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      await _auth.signInWithCredential(credential);
+      final userCred = await _auth.signInWithCredential(credential);
+      _firebaseUser = userCred.user;
+
+      // Kirim Firebase token ke backend → simpan JWT
+      await _verifyWithBackend();
+
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
@@ -130,6 +160,9 @@ class AuthProvider extends ChangeNotifier {
     await _auth.currentUser?.reload();
     _firebaseUser = _auth.currentUser;
     if (_firebaseUser?.emailVerified ?? false) {
+      // Kirim Firebase token ke backend → simpan JWT
+      await _verifyWithBackend();
+
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
@@ -146,6 +179,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     await _auth.signOut();
     await _googlesignIn.signOut();
+    await SecureStorageService.clearAll(); // Hapus JWT
     _firebaseUser = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
